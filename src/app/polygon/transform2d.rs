@@ -141,7 +141,7 @@ impl Transform2D {
     /// Применить преобразование к позиции (egui::Pos2).
     pub fn apply_to_pos(&self, pos: egui::Pos2) -> egui::Pos2 {
         let (x, y) = self.apply(pos.x, pos.y);
-        return egui::Pos2 { x, y };
+        egui::Pos2 { x, y }
     }
 
     /// Обратная матрица
