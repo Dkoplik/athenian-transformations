@@ -20,7 +20,7 @@ pub struct Polygon {
 // --------------------------------------------------
 impl Polygon {
     /// Создание полигона из одной точки
-    pub fn new(x: f32, y: f32) -> Self{
+    pub fn new(x: f32, y: f32) -> Self {
         Self {
             vertexes: vec![Pos2::new(x, y)],
             intersections: vec![],
@@ -28,7 +28,7 @@ impl Polygon {
     }
 
     /// Создание полигона из одной точки
-    pub fn from_pos(pos: Pos2) -> Self{
+    pub fn from_pos(pos: Pos2) -> Self {
         Self::new(pos.x, pos.y)
     }
 }
@@ -52,7 +52,13 @@ impl Polygon {
 
     /// Применить аффинное преобразование.
     pub fn apply_transform(&mut self, transform: Transform2D) {
-        // TODO тупо применить преобразование для всех точек полигона
+        for vertex in &mut self.vertexes {
+            *vertex = transform.apply_to_pos(*vertex);
+        }
+
+        for intersection in &mut self.intersections {
+            *intersection = transform.apply_to_pos(*intersection);
+        }
     }
 }
 
