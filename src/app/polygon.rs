@@ -61,15 +61,6 @@ impl Polygon {
 
         let intersection = Pos2::new(a.x + t * ab_dir.x, a.y + t * ab_dir.y);
 
-        let cd_to_intersection = Pos2::new(intersection.x - c.x, intersection.y - c.y);
-        let dot_product = cd_dir.x * cd_to_intersection.x + cd_dir.y * cd_to_intersection.y;
-        let cd_length_squared = cd_dir.x * cd_dir.x + cd_dir.y * cd_dir.y;
-
-        let s = dot_product / cd_length_squared;
-        if !(0.0..=1.0).contains(&s) {
-            return None;
-        }
-
         Some(intersection)
     }
 
@@ -152,24 +143,24 @@ impl Polygon {
     /// Является ли полигон выпуклым?
     pub fn is_convex(&self) -> bool {
         let n = self.vertexes.len();
-    
+
         if n < 3 {
             return false;
         }
-        
+
         let mut sign = 0;
-        
+
         for i in 0..n {
             let p1 = &self.vertexes[i];
             let p2 = &self.vertexes[(i + 1) % n];
             let p3 = &self.vertexes[(i + 2) % n];
-            
+
             // векторное произведение
             let cross_product = (p2.x - p1.x) * (p3.y - p2.y) - (p2.y - p1.y) * (p3.x - p2.x);
-            
+
             if cross_product != 0.0 {
                 let current_sign = if cross_product > 0.0 { 1 } else { -1 };
-                
+
                 if sign == 0 {
                     sign = current_sign;
                 } else if sign != current_sign {
@@ -177,48 +168,47 @@ impl Polygon {
                 }
             }
         }
-        
+
         true
     }
 
     /// Содержит ли полигон заданную точку?
     pub fn contains(&self, x: f32, y: f32) -> bool {
         let n = self.vertexes.len();
-        
+
         match n {
             0 => false,
-            1 => {
-                (self.vertexes[0].x - x).abs() < 1e-6 && (self.vertexes[0].y - y).abs() < 1e-6
-            }
+            1 => (self.vertexes[0].x - x).abs() < 1e-6 && (self.vertexes[0].y - y).abs() < 1e-6,
             2 => {
                 let p1 = self.vertexes[0];
                 let p2 = self.vertexes[1];
-                
+
                 // коллинеарны ли
                 let cross = (p2.x - p1.x) * (y - p1.y) - (p2.y - p1.y) * (x - p1.x);
                 if cross.abs() > 1e-6 {
                     return false;
                 }
-                
+
                 // лежит ли точка между p1 и p2 (скалярное произведение)
                 let dot = (x - p1.x) * (p2.x - p1.x) + (y - p1.y) * (p2.y - p1.y);
                 dot >= 0.0 && dot <= ((p2.x - p1.x).powi(2) + (p2.y - p1.y).powi(2))
             }
             _ => {
                 let mut inside = false;
-                
+
                 for i in 0..n {
                     let j = (i + 1) % n;
                     let vi = self.vertexes[i];
                     let vj = self.vertexes[j];
-                    
+
                     // пересекает ли луч, идущий вправо от точки, с ребром
-                    if ((vi.y > y) != (vj.y > y)) && 
-                    (x < (vj.x - vi.x) * (y - vi.y) / (vj.y - vi.y) + vi.x) {
+                    if ((vi.y > y) != (vj.y > y))
+                        && (x < (vj.x - vi.x) * (y - vi.y) / (vj.y - vi.y) + vi.x)
+                    {
                         inside = !inside;
                     }
                 }
-                
+
                 inside
             }
         }
