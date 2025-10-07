@@ -167,3 +167,85 @@ impl Polygon {
         self.contains(pos.x, pos.y)
     }
 }
+
+// --------------------------------------------------
+// Вспомогательные функции
+// --------------------------------------------------
+impl Polygon {
+    /// Возвращает центр полигона
+    pub fn get_center(&self) -> Pos2 {
+        let mut x: f32 = 0.0;
+        let mut y: f32 = 0.0;
+        for vertex in &self.vertexes {
+            x += vertex.x;
+            y += vertex.y;
+        }
+        Pos2 {
+            x: x / self.vertexes.len() as f32,
+            y: y / self.vertexes.len() as f32,
+        }
+    }
+}
+
+// --------------------------------------------------
+// Рисование полигона
+// --------------------------------------------------
+
+impl Polygon {
+    fn draw_vertexes(&self, painter: &egui::Painter, style: &PolygonStyle) {
+        self.vertexes.iter().for_each(|vertex_pos| {
+            painter.circle_filled(*vertex_pos, style.vertex_radius, style.vertex_color);
+        });
+    }
+
+    fn draw_edges(&self, painter: &egui::Painter, style: &PolygonStyle) {
+        let mut points = self.vertexes.clone();
+        if points.len() >= 3 {
+            points.push(points[0]);
+        }
+        painter.line(
+            points,
+            egui::epaint::PathStroke::new(style.edge_width, style.edge_color),
+        );
+    }
+
+    pub fn draw(&self, painter: &egui::Painter, style: &PolygonStyle) {
+        self.draw_vertexes(painter, style);
+        self.draw_edges(painter, style);
+    }
+}
+
+/// Настройка рисования полигона
+pub struct PolygonStyle {
+    /// Цвет вершины полигона
+    vertex_color: egui::Color32,
+    /// Радиус вершины полигона
+    vertex_radius: f32,
+
+    /// Цвет ребра полигона
+    edge_color: egui::Color32,
+    /// Толщина ребра полигона
+    edge_width: f32,
+}
+
+impl PolygonStyle {
+    /// Стандартный стиль полигона
+    pub fn standard() -> Self {
+        PolygonStyle {
+            vertex_color: egui::Color32::BLACK,
+            vertex_radius: 7.0,
+            edge_color: egui::Color32::BLACK,
+            edge_width: 5.0,
+        }
+    }
+
+    /// Стиль выбранного полигона
+    pub fn selected() -> Self {
+        PolygonStyle {
+            vertex_color: egui::Color32::LIGHT_BLUE,
+            vertex_radius: 10.0,
+            edge_color: egui::Color32::LIGHT_BLUE,
+            edge_width: 7.0,
+        }
+    }
+}

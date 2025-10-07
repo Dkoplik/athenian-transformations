@@ -209,7 +209,27 @@ impl Transform2D {
         Self::rotation_around_pos(angle_degree.to_radians(), pos)
     }
 
-    // Сюда можно добавить ещё конструкторов по необходимости
+    /// Масштабирование относительно заданной точки.
+    pub fn scaling_around_point(kx: f32, ky: f32, center_x: f32, center_y: f32) -> Self {
+        Self::translation(center_x, center_y)
+            .multiply(&Self::scaling(kx, ky))
+            .multiply(&Self::translation(-center_x, -center_y))
+    }
+
+    /// Масштабирование относительно заданной позиции (egui::Pos2).
+    pub fn scaling_around_pos(kx: f32, ky: f32, pos: egui::Pos2) -> Self {
+        Self::scaling_around_point(kx, ky, pos.x, pos.y)
+    }
+
+    /// Равномерное масштабирование относительно заданной точки.
+    pub fn uniform_scaling_around_point(scale: f32, center_x: f32, center_y: f32) -> Self {
+        Self::scaling_around_point(scale, scale, center_x, center_y)
+    }
+
+    /// Равномерное масштабирование относительно заданной позиции (egui::Pos2).
+    pub fn uniform_scaling_around_pos(scale: f32, pos: egui::Pos2) -> Self {
+        Self::scaling_around_point(scale, scale, pos.x, pos.y)
+    }
 }
 
 // --------------------------------------------------
