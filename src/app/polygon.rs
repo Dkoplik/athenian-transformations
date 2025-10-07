@@ -61,6 +61,15 @@ impl Polygon {
 
         let intersection = Pos2::new(a.x + t * ab_dir.x, a.y + t * ab_dir.y);
 
+        let cd_to_intersection = Pos2::new(intersection.x - c.x, intersection.y - c.y);
+        let dot_product = cd_dir.x * cd_to_intersection.x + cd_dir.y * cd_to_intersection.y;
+        let cd_length_squared = cd_dir.x * cd_dir.x + cd_dir.y * cd_dir.y;
+
+        let s = dot_product / cd_length_squared;
+        if !(0.0..=1.0).contains(&s) {
+            return None;
+        }
+
         Some(intersection)
     }
 
