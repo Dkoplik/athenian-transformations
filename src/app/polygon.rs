@@ -233,8 +233,8 @@ impl Polygon {
             y += vertex.y;
         }
         Pos2 {
-            x: x / self.vertexes.len() as f32,
-            y: y / self.vertexes.len() as f32,
+            x: x / (self.vertexes.len() as f32),
+            y: y / (self.vertexes.len() as f32),
         }
     }
 }
@@ -261,9 +261,21 @@ impl Polygon {
         );
     }
 
+    fn draw_intersections(&self, painter: &egui::Painter, style: &PolygonStyle) {
+        self.intersections.iter().for_each(|intersection_pos| {
+            painter.circle_filled(
+                *intersection_pos,
+                style.intersection_radius,
+                style.intersection_color,
+            );
+        });
+    }
+
+    /// Нарисовать полигон на холсте.
     pub fn draw(&self, painter: &egui::Painter, style: &PolygonStyle) {
         self.draw_vertexes(painter, style);
         self.draw_edges(painter, style);
+        self.draw_intersections(painter, style);
     }
 }
 
@@ -273,6 +285,11 @@ pub struct PolygonStyle {
     vertex_color: egui::Color32,
     /// Радиус вершины полигона
     vertex_radius: f32,
+
+    /// Цвет пересечения полигона
+    intersection_color: egui::Color32,
+    /// Радиус пересечения полигона
+    intersection_radius: f32,
 
     /// Цвет ребра полигона
     edge_color: egui::Color32,
@@ -286,6 +303,8 @@ impl PolygonStyle {
         PolygonStyle {
             vertex_color: egui::Color32::BLACK,
             vertex_radius: 7.0,
+            intersection_color: egui::Color32::LIGHT_GRAY,
+            intersection_radius: 3.0,
             edge_color: egui::Color32::BLACK,
             edge_width: 5.0,
         }
@@ -296,6 +315,8 @@ impl PolygonStyle {
         PolygonStyle {
             vertex_color: egui::Color32::LIGHT_BLUE,
             vertex_radius: 10.0,
+            intersection_color: egui::Color32::DARK_BLUE,
+            intersection_radius: 7.0,
             edge_color: egui::Color32::LIGHT_BLUE,
             edge_width: 7.0,
         }

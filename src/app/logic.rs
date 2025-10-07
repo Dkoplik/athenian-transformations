@@ -1,5 +1,3 @@
-use std::default;
-
 use crate::app::{
     AthenianApp,
     polygon::{Polygon, PolygonStyle, transform2d::Transform2D},
@@ -88,12 +86,12 @@ impl AthenianApp {
 
     /// Обработать перетаскивание по холсту.
     fn handle_drag(&mut self, response: &Response) {
-        if !response.dragged_by(egui::PointerButton::Primary) {
+        if response.drag_stopped_by(egui::PointerButton::Primary) {
+            self.drag_prev_pos = None;
             return;
         }
 
-        if response.drag_stopped_by(egui::PointerButton::Primary) {
-            self.drag_prev_pos = None;
+        if !response.dragged_by(egui::PointerButton::Primary) {
             return;
         }
 
@@ -156,6 +154,9 @@ impl AthenianApp {
             let delta = end - start;
             let polygon = &mut self.polygons[index];
             polygon.apply_transform(Transform2D::translation(delta.x, delta.y));
+
+            #[cfg(debug_assertions)]
+            println!("drag with start {:#?} end {:#?}", start, end);
         }
     }
 
@@ -168,12 +169,18 @@ impl AthenianApp {
             if let Some(anchor) = self.selected_polygon_anchor {
                 let angle = calculate_rotation_angle(anchor, start, end);
                 polygon.apply_transform(Transform2D::rotation_around_pos(angle, anchor));
+
+                #[cfg(debug_assertions)]
+                println!("rotate relative to {:#?} with angle {:#?}", anchor, angle);
             }
             // Просто повернуть относительно центра
             else {
                 let center = polygon.get_center();
                 let angle = calculate_rotation_angle(center, start, end);
-                polygon.apply_transform(Transform2D::rotation(angle));
+                polygon.apply_transform(Transform2D::rotation_around_pos(angle, center));
+
+                #[cfg(debug_assertions)]
+                println!("rotate relative to center {:#?} with angle {:#?}", center, angle);
             }
         }
     }
@@ -187,12 +194,18 @@ impl AthenianApp {
             if let Some(anchor) = self.selected_polygon_anchor {
                 let (sx, sy) = calculate_scale(anchor, start, end);
                 polygon.apply_transform(Transform2D::scaling_around_pos(sx, sy, anchor));
+
+                #[cfg(debug_assertions)]
+                println!("scale relative to {:#?} with scale x:{} y:{}", anchor, sx, sy);
             }
             // Просто растянуть относительно центра
             else {
                 let center = polygon.get_center();
                 let (sx, sy) = calculate_scale(center, start, end);
-                polygon.apply_transform(Transform2D::scaling(sx, sy));
+                polygon.apply_transform(Transform2D::scaling_around_pos(sx, sy, center));
+
+                #[cfg(debug_assertions)]
+                println!("scale relative to center {:#?} with scale x:{} y:{}", center, sx, sy);
             }
         }
     }
