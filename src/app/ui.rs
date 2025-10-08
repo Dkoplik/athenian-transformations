@@ -50,8 +50,12 @@ impl AthenianApp {
                         self.instrument = crate::app::logic::Instrument::Select;
                     }
 
-                    if ui.button("Set Center").clicked() {
+                    if ui.button("Set Anchor").clicked() {
                         self.instrument = crate::app::logic::Instrument::SetAnchor;
+                    }
+
+                    if ui.button("Set Point").clicked() {
+                        self.instrument = crate::app::logic::Instrument::SetPoint;
                     }
 
                     if ui.button("Drag Polygon").clicked() {

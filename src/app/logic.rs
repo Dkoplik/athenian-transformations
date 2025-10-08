@@ -38,6 +38,7 @@ impl AthenianApp {
         self.polygons.clear();
         self.selected_polygon_index = None;
         self.selected_polygon_anchor = None;
+        self.selected_point = None;
     }
 
     /// Нарисовать текущий якорь.
@@ -47,16 +48,24 @@ impl AthenianApp {
         }
     }
 
+    /// Нарисовать выбранную точку.
+    fn draw_point(&self, painter: &Painter) {
+        if let Some(anchor) = self.selected_point {
+            painter.circle_filled(anchor, 5.0, Color32::GREEN);
+        }
+    }
+
     /// Нарисовать холст.
     pub fn draw_canvas(&mut self, painter: &Painter) {
         for i in 0..self.polygons.len() {
             if self.selected_polygon_index.is_some() && i == self.selected_polygon_index.unwrap() {
-                self.polygons[i].draw(&painter, &PolygonStyle::selected());
+                self.polygons[i].draw(&painter, &PolygonStyle::selected(), self.selected_point);
             } else {
-                self.polygons[i].draw(&painter, &PolygonStyle::standard());
+                self.polygons[i].draw(&painter, &PolygonStyle::standard(), self.selected_point);
             }
         }
         self.draw_anchor(painter);
+        self.draw_point(painter);
     }
 }
 
@@ -79,6 +88,7 @@ impl AthenianApp {
                 Instrument::AddVertex => self.add_vertex_to_selected_polygon(pos),
                 Instrument::Select => self.select_polygon(pos),
                 Instrument::SetAnchor => self.change_anchor(pos),
+                Instrument::SetPoint => self.change_point(pos),
                 _ => (),
             }
         }
@@ -148,6 +158,11 @@ impl AthenianApp {
         self.selected_polygon_anchor = Some(pos);
     }
 
+    /// Выбрать точку для проверки положения относительно ребёр.
+    fn change_point(&mut self, pos: Pos2) {
+        self.selected_point = Some(pos);
+    }
+
     /// Переместить выбранный полигон параллельно координатным осям.
     fn drag_selected_polygon(&mut self, start: Pos2, end: Pos2) {
         if let Some(index) = self.selected_polygon_index {
@@ -180,7 +195,10 @@ impl AthenianApp {
                 polygon.apply_transform(Transform2D::rotation_around_pos(angle, center));
 
                 #[cfg(debug_assertions)]
-                println!("rotate relative to center {:#?} with angle {:#?}", center, angle);
+                println!(
+                    "rotate relative to center {:#?} with angle {:#?}",
+                    center, angle
+                );
             }
         }
     }
@@ -196,7 +214,10 @@ impl AthenianApp {
                 polygon.apply_transform(Transform2D::scaling_around_pos(sx, sy, anchor));
 
                 #[cfg(debug_assertions)]
-                println!("scale relative to {:#?} with scale x:{} y:{}", anchor, sx, sy);
+                println!(
+                    "scale relative to {:#?} with scale x:{} y:{}",
+                    anchor, sx, sy
+                );
             }
             // Просто растянуть относительно центра
             else {
@@ -205,7 +226,10 @@ impl AthenianApp {
                 polygon.apply_transform(Transform2D::scaling_around_pos(sx, sy, center));
 
                 #[cfg(debug_assertions)]
-                println!("scale relative to center {:#?} with scale x:{} y:{}", center, sx, sy);
+                println!(
+                    "scale relative to center {:#?} with scale x:{} y:{}",
+                    center, sx, sy
+                );
             }
         }
     }
@@ -217,6 +241,7 @@ pub enum Instrument {
     AddVertex,
     Select,
     SetAnchor,
+    SetPoint,
     Drag,
     Rotate,
     Scale,
@@ -228,6 +253,7 @@ impl ToString for Instrument {
             Self::AddVertex => String::from("добавить вершину"),
             Self::Select => String::from("выбрать полигон"),
             Self::SetAnchor => String::from("изменить якорь полигона"),
+            Self::SetPoint => String::from("изменить точку"),
             Self::Drag => String::from("перетащить полигон"),
             Self::Rotate => String::from("повернуть полигон"),
             Self::Scale => String::from("изменить размер полигона"),
@@ -243,7 +269,7 @@ fn calculate_rotation_angle(center: Pos2, start: Pos2, end: Pos2) -> f32 {
     let start_angle = start_vec.1.atan2(start_vec.0);
     let end_angle = end_vec.1.atan2(end_vec.0);
 
-    let mut angle = end_angle - start_angle;
+    let mut angle = start_angle - end_angle;
     let pi = std::f32::consts::PI;
     while angle > pi {
         angle -= 2.0 * pi;
@@ -255,17 +281,22 @@ fn calculate_rotation_angle(center: Pos2, start: Pos2, end: Pos2) -> f32 {
     angle
 }
 
-/// Считает растяжение на основе смещения относетльно какого-то центра.
+/// Считает растяжение на основе смещения относительно какого-то центра.
 fn calculate_scale(center: Pos2, start: Pos2, end: Pos2) -> (f32, f32) {
-    let center_to_start_dist = center.distance(start).abs();
-    let center_to_end_dist = center.distance(end).abs();
+    let start_vec = start - center;
+    let end_vec = end - center;
 
-    let dx = (end.x - start.x).abs();
-    let dy = (end.y - start.y).abs();
-
-    if center_to_end_dist > center_to_start_dist {
-        (dx.sqrt(), dy.sqrt())
+    let scale_x = if start_vec.x.abs() < f32::EPSILON {
+        1.0
     } else {
-        ((1.0 / dx.max(1.0)).sqrt(), (1.0 / dy.max(1.0)).sqrt())
-    }
+        end_vec.x / start_vec.x
+    };
+
+    let scale_y = if start_vec.y.abs() < f32::EPSILON {
+        1.0
+    } else {
+        end_vec.y / start_vec.y
+    };
+
+    (scale_x, scale_y)
 }

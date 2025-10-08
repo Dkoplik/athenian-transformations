@@ -15,6 +15,8 @@ pub struct AthenianApp {
     selected_polygon_index: Option<usize>,
     /// Якорь для операций над полигоном
     selected_polygon_anchor: Option<egui::Pos2>,
+    /// Точка (слева/справа от ребра)
+    selected_point: Option<egui::Pos2>,
 
     /// Текущий инструмент
     instrument: logic::Instrument,

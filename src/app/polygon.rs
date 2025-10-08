@@ -34,79 +34,6 @@ impl Polygon {
 }
 
 // --------------------------------------------------
-// Приватные вспомогательные методы
-// --------------------------------------------------
-
-impl Polygon {
-    /// Проверка пересечения двух отрезков ab и cd
-    fn segments_intersect(a: Pos2, b: Pos2, c: Pos2, d: Pos2) -> Option<Pos2> {
-        let ab_dir = Pos2::new(b.x - a.x, b.y - a.y);
-        let cd_dir = Pos2::new(d.x - c.x, d.y - c.y);
-
-        let n = Pos2::new(-cd_dir.y, cd_dir.x);
-
-        let denominator = n.x * ab_dir.x + n.y * ab_dir.y;
-
-        if denominator.abs() < 1e-12 {
-            return None;
-        }
-
-        let ac = Pos2::new(a.x - c.x, a.y - c.y);
-        let numerator = -(n.x * ac.x + n.y * ac.y);
-        let t = numerator / denominator;
-
-        if !(0.0..=1.0).contains(&t) {
-            return None;
-        }
-
-        let intersection = Pos2::new(a.x + t * ab_dir.x, a.y + t * ab_dir.y);
-
-        let cd_to_intersection = Pos2::new(intersection.x - c.x, intersection.y - c.y);
-        let dot_product = cd_dir.x * cd_to_intersection.x + cd_dir.y * cd_to_intersection.y;
-        let cd_length_squared = cd_dir.x * cd_dir.x + cd_dir.y * cd_dir.y;
-
-        let s = dot_product / cd_length_squared;
-        if !(0.0..=1.0).contains(&s) {
-            return None;
-        }
-
-        Some(intersection)
-    }
-
-    /// Обновление списка пересечений при добавлении новой вершины
-    fn update_intersections(&mut self) {
-        self.intersections.clear();
-
-        let n = self.vertexes.len();
-        if n < 4 {
-            return;
-        }
-
-        for i in 0..n {
-            let a = self.vertexes[i];
-            let b = self.vertexes[(i + 1) % n];
-
-            for j in (i + 2)..n {
-                if (j + 1) % n == i {
-                    continue;
-                }
-
-                let c = self.vertexes[j];
-                let d = self.vertexes[(j + 1) % n];
-
-                if let Some(intersection) = Self::segments_intersect(a, b, c, d)
-                    && !self.intersections.iter().any(|&p| {
-                        (p.x - intersection.x).abs() < 1e-6 && (p.y - intersection.y).abs() < 1e-6
-                    })
-                {
-                    self.intersections.push(intersection);
-                }
-            }
-        }
-    }
-}
-
-// --------------------------------------------------
 // Операции над полигоном (его изменение)
 // --------------------------------------------------
 
@@ -246,6 +173,87 @@ impl Polygon {
             y: y / (self.vertexes.len() as f32),
         }
     }
+
+    /// Проверяет, находится ли точка point слева от отрезка [start, end]
+    fn is_point_left(point: Pos2, start: Pos2, end: Pos2) -> bool {
+        let segment_vector = end - start;
+        let point_vector = point - start;
+
+        // векторное произведение
+        let cross_product = segment_vector.x * point_vector.y - segment_vector.y * point_vector.x;
+        cross_product > 0.0
+    }
+
+    fn is_point_right(point: Pos2, start: Pos2, end: Pos2) -> bool {
+        !Self::is_point_left(point, start, end)
+    }
+
+    /// Проверка пересечения двух отрезков ab и cd
+    fn segments_intersect(a: Pos2, b: Pos2, c: Pos2, d: Pos2) -> Option<Pos2> {
+        let ab_dir = Pos2::new(b.x - a.x, b.y - a.y);
+        let cd_dir = Pos2::new(d.x - c.x, d.y - c.y);
+
+        let n = Pos2::new(-cd_dir.y, cd_dir.x);
+
+        let denominator = n.x * ab_dir.x + n.y * ab_dir.y;
+
+        if denominator.abs() < 1e-12 {
+            return None;
+        }
+
+        let ac = Pos2::new(a.x - c.x, a.y - c.y);
+        let numerator = -(n.x * ac.x + n.y * ac.y);
+        let t = numerator / denominator;
+
+        if !(0.0..=1.0).contains(&t) {
+            return None;
+        }
+
+        let intersection = Pos2::new(a.x + t * ab_dir.x, a.y + t * ab_dir.y);
+
+        let cd_to_intersection = Pos2::new(intersection.x - c.x, intersection.y - c.y);
+        let dot_product = cd_dir.x * cd_to_intersection.x + cd_dir.y * cd_to_intersection.y;
+        let cd_length_squared = cd_dir.x * cd_dir.x + cd_dir.y * cd_dir.y;
+
+        let s = dot_product / cd_length_squared;
+        if !(0.0..=1.0).contains(&s) {
+            return None;
+        }
+
+        Some(intersection)
+    }
+
+    /// Обновление списка пересечений при добавлении новой вершины
+    fn update_intersections(&mut self) {
+        self.intersections.clear();
+
+        let n = self.vertexes.len();
+        if n < 4 {
+            return;
+        }
+
+        for i in 0..n {
+            let a = self.vertexes[i];
+            let b = self.vertexes[(i + 1) % n];
+
+            for j in (i + 2)..n {
+                if (j + 1) % n == i {
+                    continue;
+                }
+
+                let c = self.vertexes[j];
+                let d = self.vertexes[(j + 1) % n];
+
+                if let Some(intersection) = Self::segments_intersect(a, b, c, d)
+                    && !self.intersections.iter().any(|&p| {
+                        (p.x - intersection.x).abs() < 1e-6 && (p.y - intersection.y).abs() < 1e-6
+                    })
+                {
+                    self.intersections.push(intersection);
+                }
+            }
+        }
+    }
 }
 
 // --------------------------------------------------
@@ -280,11 +288,56 @@ impl Polygon {
         });
     }
 
+    fn draw_arrows(&self, point: Pos2, painter: &egui::Painter, style: &PolygonStyle) {
+        for i in 0..self.vertexes.len() {
+            let a = self.vertexes[i];
+            let b = self.vertexes[(i + 1) % self.vertexes.len()];
+
+            let ab = b - a;
+            let arrow_vec: egui::Vec2;
+            if Self::is_point_left(point, a, b) {
+                arrow_vec = egui::Vec2 { x: -ab.y, y: ab.x }.normalized();
+            } else {
+                arrow_vec = egui::Vec2 { x: ab.y, y: -ab.x }.normalized();
+            }
+
+            let mid_pos = egui::Pos2 {
+                x: (a.x + b.x) / 2.0,
+                y: (a.y + b.y) / 2.0,
+            };
+            painter.arrow(
+                mid_pos,
+                20.0 * arrow_vec,
+                egui::epaint::Stroke::new(style.arrow_width, style.arrow_color),
+            );
+        }
+    }
+
+    fn draw_label(&self, painter: &egui::Painter) {
+        let string: String;
+        if self.is_convex() {
+            string = String::from("выпуклый");
+        } else {
+            string = String::from("невыпуклый");
+        }
+        painter.text(
+            self.get_center(),
+            egui::Align2::CENTER_CENTER,
+            string,
+            egui::FontId::proportional(18.0),
+            egui::Color32::BLACK,
+        );
+    }
+
     /// Нарисовать полигон на холсте.
-    pub fn draw(&self, painter: &egui::Painter, style: &PolygonStyle) {
+    pub fn draw(&self, painter: &egui::Painter, style: &PolygonStyle, point: Option<Pos2>) {
         self.draw_vertexes(painter, style);
         self.draw_edges(painter, style);
+        self.draw_label(painter);
         self.draw_intersections(painter, style);
+        if let Some(pos) = point {
+            self.draw_arrows(pos, painter, style);
+        }
     }
 }
 
@@ -304,6 +357,11 @@ pub struct PolygonStyle {
     edge_color: egui::Color32,
     /// Толщина ребра полигона
     edge_width: f32,
+
+    /// Цвет стрелки
+    arrow_color: egui::Color32,
+    /// Ширина стрелки
+    arrow_width: f32,
 }
 
 impl PolygonStyle {
@@ -316,6 +374,8 @@ impl PolygonStyle {
             intersection_radius: 3.0,
             edge_color: egui::Color32::BLACK,
             edge_width: 5.0,
+            arrow_color: egui::Color32::LIGHT_BLUE,
+            arrow_width: 1.0,
         }
     }
 
@@ -328,6 +388,8 @@ impl PolygonStyle {
             intersection_radius: 7.0,
             edge_color: egui::Color32::LIGHT_BLUE,
             edge_width: 7.0,
+            arrow_color: egui::Color32::DARK_BLUE,
+            arrow_width: 1.0,
         }
     }
 }
