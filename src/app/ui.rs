@@ -89,8 +89,6 @@ impl AthenianApp {
     /// Показать центральную (основную) панель приложения.
     fn show_cental_panel(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label("TODO центральная область");
-
             egui::Resize::default()
                 .default_size(egui::Vec2 {x: 900.0, y: 600.0})
                 .show(ui, |ui| {
